@@ -109,3 +109,27 @@ def calcEk(oS,k):
 	return Ek
 	
 def selectJ(i,oS,Ei):
+    maxK=-1
+	maxDeltaE=0
+	Ej=0
+	oS.eCache[i]=[1,Ei]
+	validEcacheList=nonzero(oS.eCache[:,0].A)[0]
+	if (len(validEcacheList))>1:
+	    for k in validEcacheList:
+		    if k==i:
+			    continue
+			Ek=calcEk(oS,k)
+			deltaE=abs(Ei-Ek)
+			if(deltaE>maxDeltaE):
+			    maxK=k
+				maxDeltaE=deltaE
+				Ej=Ek
+		return maxK,Ej
+	else:
+	     j=selectJrand(i,oS.m)
+		 Ej=calcEk(oS,j)
+	return j,Ej
+	
+def updateEk(oS,k):
+    Ek=calcEk(oS,k)
+	oS.eCache[k]=[1,Ek]
