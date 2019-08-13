@@ -118,3 +118,69 @@ print(dfoff['label'].value_counts())
 
 #建立模型
 #1.划分训练集和验证集 划分方式是按照领券日期，即训练集：20160101-20160515，验证集：20160516-20160615。我们采用的模型是简单的 SGDClassifier。
+# data split
+df = dfoff[dfoff['label'] != -1].copy()
+train = df[(df['Date_received'] < '20160516')].copy()
+valid = df[(df['Date_received'] >= '20160516') & (df['Date_received'] <= '20160615')].copy()
+print('Train Set: \n', train['label'].value_counts())
+print('Valid Set: \n', valid['label'].value_counts())
+
+#2.构建模型
+def check_model(data, predictors):
+   
+   classifier = lambda: SGDClassifier(
+       loss='log',  # loss function: logistic regression
+       penalty='elasticnet', # L1 & L2
+       fit_intercept=True,  # 是否存在截距，默认存在
+       max_iter=100, 
+       shuffle=True,  # Whether or not the training data should be shuffled after each epoch
+       n_jobs=1, # The number of processors to use
+       class_weight=None) # Weights associated with classes. If not given, all classes are supposed to have weight one.
+
+   # 管道机制使得参数集在新数据集（比如测试集）上的重复使用，管道机制实现了对全部步骤的流式化封装和管理。
+   model = Pipeline(steps=[
+       ('ss', StandardScaler()), # transformer
+       ('en', classifier())  # estimator
+   ])
+
+   parameters = {
+       'en__alpha': [ 0.001, 0.01, 0.1],
+       'en__l1_ratio': [ 0.001, 0.01, 0.1]
+   }
+
+   # StratifiedKFold用法类似Kfold，但是他是分层采样，确保训练集，测试集中各类别样本的比例与原始数据集中相同。
+   folder = StratifiedKFold(n_splits=3, shuffle=True)
+   
+   # Exhaustive search over specified parameter values for an estimator.
+   grid_search = GridSearchCV(
+       model, 
+       parameters, 
+       cv=folder, 
+       n_jobs=-1,  # -1 means using all processors
+       verbose=1)
+   grid_search = grid_search.fit(data[predictors], 
+                                 data['label'])
+   
+   return grid_search
+
+#3.训练   
+predictors = original_feature
+model = check_model(train, predictors)
+
+#4.验证
+# valid predict
+y_valid_pred = model.predict_proba(valid[predictors])
+valid1 = valid.copy()
+valid1['pred_prob'] = y_valid_pred[:, 1]
+valid1.head(5)
+
+# avgAUC calculation
+vg = valid1.groupby(['Coupon_id'])
+aucs = []
+for i in vg:
+   tmpdf = i[1] 
+   if len(tmpdf['label'].unique()) != 2:
+       continue
+   fpr, tpr, thresholds = roc_curve(tmpdf['label'], tmpdf['pred_prob'], pos_label=1)
+   aucs.append(auc(fpr, tpr))
+print(np.average(aucs))
