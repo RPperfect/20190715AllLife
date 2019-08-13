@@ -100,3 +100,21 @@ dfoff[weekdaycols] = tmpdf
 tmpdf = pd.get_dummies(dftest['weekday'].replace('null', np.nan))
 tmpdf.columns = weekdaycols
 dftest[weekdaycols] = tmpdf
+
+#经过特征提取，增加了14个特征
+
+#标注标签label 正样本y=1,负样本y=0
+def label(row):
+   if row['Date_received'] == 'null':
+       return -1
+   if row['Date'] != 'null':
+       td = pd.to_datetime(row['Date'], format='%Y%m%d') - pd.to_datetime(row['Date_received'], format='%Y%m%d')
+       if td <= pd.Timedelta(15, 'D'):
+           return 1
+   return 0
+
+dfoff['label']=dfoff.apply(label,axis=1)
+print(dfoff['label'].value_counts())
+
+#建立模型
+#1.划分训练集和验证集 划分方式是按照领券日期，即训练集：20160101-20160515，验证集：20160516-20160615。我们采用的模型是简单的 SGDClassifier。
