@@ -2,8 +2,10 @@ import pandas as pd
 import numpy as np
 from datetime import date
 #加载线下数据
-dfoff=pd.read_csv('F:\IT\阿里天池\天池新人实战赛o2o优惠\data\ccf_offline_stage1_train.csv')
-dftest=pd.read_csv('F:\IT\阿里天池\天池新人实战赛o2o优惠\data\ccf_offline_stage1_test_revised.csv')
+#dfoff=pd.read_csv('F:\IT\阿里天池\天池新人实战赛o2o优惠\data\ccf_offline_stage1_train.csv')
+#dftest=pd.read_csv('F:\IT\阿里天池\天池新人实战赛o2o优惠\data\ccf_offline_stage1_test_revised.csv')
+dfoff=pd.read_csv('D:\IT\python\天池\o2o\data\ccf_offline_stage1_train.csv',engine='python',keep_default_na=False)
+dftest=pd.read_csv('D:\IT\python\天池\o2o\data\ccf_offline_stage1_test_revised.csv',engine='python',keep_default_na=False)
 
 #数据前5行
 dfoff.head()
@@ -163,7 +165,8 @@ def check_model(data, predictors):
    
    return grid_search
 
-#3.训练   
+#3.训练  
+original_feature = ['discount_rate','discount_type','discount_man', 'discount_jian','distance', 'weekday', 'weekday_type'] + weekdaycols
 predictors = original_feature
 model = check_model(train, predictors)
 
